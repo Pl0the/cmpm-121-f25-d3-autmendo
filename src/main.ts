@@ -76,7 +76,6 @@ function Bounds(i: number, j: number): leaflet.LatLngBounds {
   );
 }
 
-
 const oneCell = leaflet.rectangle(Bounds(0, 0), {
   color: "blue",
   weight: 1,

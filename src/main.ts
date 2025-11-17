@@ -32,6 +32,8 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 
 const GAMEPLAY_ZOOM_LEVEL = 19;
 
+const TILE_DEGREES = 0.0001;
+
 // Map creation
 
 const map = leaflet.map(mapDiv, {
@@ -59,3 +61,24 @@ const playerMarker = leaflet.marker(CLASSROOM_LATLNG, {
 
 playerMarker.bindTooltip("You are here!");
 playerMarker.addTo(map);
+
+function Bounds(i: number, j: number): leaflet.LatLngBounds {
+  const origin = CLASSROOM_LATLNG;
+  return leaflet.latLngBounds(
+    [
+      origin.lat + i * TILE_DEGREES,
+      origin.lng + j * TILE_DEGREES,
+    ],
+    [
+      origin.lat + (i + 1) * TILE_DEGREES,
+      origin.lng + (j + 1) * TILE_DEGREES,
+    ],
+  );
+}
+
+
+const oneCell = leaflet.rectangle(Bounds(0, 0), {
+  color: "blue",
+  weight: 1,
+});
+oneCell.addTo(map);

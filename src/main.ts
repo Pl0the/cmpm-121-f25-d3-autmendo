@@ -8,6 +8,7 @@ import "./style.css";
 import "./_leafletWorkaround.ts";
 
 // UI elements
+
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
 controlPanelDiv.textContent = "UCSC Token Crafter";
@@ -32,6 +33,7 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 const GAMEPLAY_ZOOM_LEVEL = 19;
 
 // Map creation
+
 const map = leaflet.map(mapDiv, {
   center: CLASSROOM_LATLNG,
   zoom: GAMEPLAY_ZOOM_LEVEL,
@@ -48,3 +50,12 @@ leaflet
       '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   })
   .addTo(map);
+
+// Player marker
+
+const playerMarker = leaflet.marker(CLASSROOM_LATLNG, {
+  title: "You are here",
+});
+
+playerMarker.bindTooltip("You are here!");
+playerMarker.addTo(map);

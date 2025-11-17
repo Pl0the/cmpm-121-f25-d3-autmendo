@@ -76,8 +76,14 @@ function Bounds(i: number, j: number): leaflet.LatLngBounds {
   );
 }
 
-const oneCell = leaflet.rectangle(Bounds(0, 0), {
-  color: "blue",
-  weight: 1,
-});
-oneCell.addTo(map);
+const GRID_RADIUS = 24;
+
+for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
+  for (let j = -GRID_RADIUS; j <= GRID_RADIUS; j++) {
+    const cell = leaflet.rectangle(Bounds(i, j), {
+      color: "#1326cdff",
+      weight: 1,
+    });
+    cell.addTo(map);
+  }
+}

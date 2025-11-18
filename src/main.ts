@@ -25,6 +25,10 @@ statusPanelDiv.id = "statusPanel";
 statusPanelDiv.textContent = "Held token: (none)";
 document.body.append(statusPanelDiv);
 
+const messageDiv = document.createElement("div");
+messageDiv.id = "messagePanel";
+document.body.append(messageDiv);
+
 // Game constants
 
 const CLASSROOM_LATLNG = leaflet.latLng(
@@ -185,7 +189,7 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
         updateHeldTokenUI();
 
         if (newValue >= 16) {
-          statusPanelDiv.textContent = `You crafted a ${newValue}!`;
+          messageDiv.textContent = `You crafted a ${newValue} Token!`;
         }
       });
     }

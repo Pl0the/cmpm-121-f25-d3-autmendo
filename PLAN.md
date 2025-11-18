@@ -30,4 +30,4 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] make only nearby cells interactable
 - [x] allow player to pick up tokens and display them
 - [x] implement crafting tokens
-- [ ] cleanup and finish with D3.a
+- [x] cleanup and finish with D3.a

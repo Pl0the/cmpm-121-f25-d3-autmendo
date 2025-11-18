@@ -92,6 +92,14 @@ function tokenValue(i: number, j: number): number {
   return 8;
 }
 
+function cellCenter(i: number, j: number): leaflet.LatLng {
+  const origin = CLASSROOM_LATLNG;
+  return leaflet.latLng(
+    origin.lat + (i + 0.5) * TILE_DEGREES,
+    origin.lng + (j + 0.5) * TILE_DEGREES,
+  );
+}
+
 interface TokenCell extends leaflet.Rectangle {
   tokenValue: number;
 }
@@ -106,7 +114,16 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
     }) as TokenCell;
 
     cell.tokenValue = val;
-
     cell.addTo(map);
+
+    if (val !== 0) {
+      const icon = leaflet.divIcon({
+        className: "token-label",
+        html: `<span>${val}</span>`,
+        iconSize: [0, 0],
+      });
+
+      leaflet.marker(cellCenter(i, j), { icon }).addTo(map);
+    }
   }
 }

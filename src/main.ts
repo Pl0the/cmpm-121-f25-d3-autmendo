@@ -38,6 +38,8 @@ const TILE_DEGREES = 0.0001;
 
 const GRID_RADIUS = 24;
 
+const INTERACTION_RADIUS = 3;
+
 // Map creation
 
 const map = leaflet.map(mapDiv, {
@@ -100,6 +102,10 @@ function cellCenter(i: number, j: number): leaflet.LatLng {
   );
 }
 
+function cellDistanceFromPlayer(i: number, j: number): number {
+  return Math.max(Math.abs(i), Math.abs(j));
+}
+
 interface TokenCell extends leaflet.Rectangle {
   tokenValue: number;
 }
@@ -115,6 +121,22 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
 
     cell.tokenValue = val;
     cell.addTo(map);
+
+    const dist = cellDistanceFromPlayer(i, j);
+    const isInteractable = dist <= INTERACTION_RADIUS;
+
+    if (!isInteractable) {
+      cell.setStyle({
+        color: "#555555",
+        weight: 1,
+        opacity: 0.4,
+        fillOpacity: 0.05,
+      });
+    } else {
+      cell.on("click", () => {
+        console.log(`Clicked token ${val} at (${i}, ${j})`);
+      });
+    }
 
     if (val !== 0) {
       const icon = leaflet.divIcon({

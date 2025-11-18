@@ -145,18 +145,47 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
       });
     } else {
       cell.on("click", () => {
-        if (heldToken !== null) return;
-        if (cell.tokenValue === 0) return;
+        // PICKUP MODE
+        if (heldToken === null) {
+          if (cell.tokenValue === 0) return;
 
-        heldToken = cell.tokenValue;
-        updateHeldTokenUI();
+          heldToken = cell.tokenValue;
+          updateHeldTokenUI();
 
-        cell.tokenValue = 0;
-        cell.setStyle({ fillOpacity: 0 });
+          cell.tokenValue = 0;
+          cell.setStyle({ fillOpacity: 0 });
+
+          if (cell.labelMarker !== null) {
+            map.removeLayer(cell.labelMarker);
+            cell.labelMarker = null;
+          }
+          return;
+        }
+
+        // CRAFTING MODE
+        if (heldToken !== cell.tokenValue) return;
+
+        const newValue = heldToken * 2;
+        cell.tokenValue = newValue;
 
         if (cell.labelMarker !== null) {
           map.removeLayer(cell.labelMarker);
-          cell.labelMarker = null;
+        }
+
+        const icon = leaflet.divIcon({
+          className: "token-label",
+          html: `<span>${newValue}</span>`,
+          iconSize: [0, 0],
+        });
+
+        const marker = leaflet.marker(cellCenter(i, j), { icon }).addTo(map);
+        cell.labelMarker = marker;
+
+        heldToken = null;
+        updateHeldTokenUI();
+
+        if (newValue >= 16) {
+          statusPanelDiv.textContent = `You crafted a ${newValue}!`;
         }
       });
     }

@@ -28,7 +28,6 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] find luck value of token
 - [x] visibly show luck value of each token on the map
 - [x] make only nearby cells interactable
-- [ ] allow player to pick up tokens
-- [ ] display player tokens
+- [x] allow player to pick up tokens and display them
 - [ ] implement crafting tokens
 - [ ] cleanup and finish with D3.a

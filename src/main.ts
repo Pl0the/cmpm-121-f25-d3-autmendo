@@ -22,7 +22,7 @@ document.body.append(mapDiv);
 
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
-statusPanelDiv.textContent = "D3.a: basic map loaded.";
+statusPanelDiv.textContent = "Held token: (none)";
 document.body.append(statusPanelDiv);
 
 // Game constants
@@ -39,6 +39,8 @@ const TILE_DEGREES = 0.0001;
 const GRID_RADIUS = 24;
 
 const INTERACTION_RADIUS = 3;
+
+let heldToken: number | null = null;
 
 // Map creation
 
@@ -106,8 +108,17 @@ function cellDistanceFromPlayer(i: number, j: number): number {
   return Math.max(Math.abs(i), Math.abs(j));
 }
 
+function updateHeldTokenUI() {
+  if (heldToken === null) {
+    statusPanelDiv.textContent = "Held token: (none)";
+  } else {
+    statusPanelDiv.textContent = `Held token: ${heldToken}`;
+  }
+}
+
 interface TokenCell extends leaflet.Rectangle {
   tokenValue: number;
+  labelMarker: leaflet.Marker | null;
 }
 
 for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
@@ -120,6 +131,7 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
     }) as TokenCell;
 
     cell.tokenValue = val;
+    cell.labelMarker = null;
     cell.addTo(map);
 
     const dist = cellDistanceFromPlayer(i, j);
@@ -128,13 +140,24 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
     if (!isInteractable) {
       cell.setStyle({
         color: "#555555",
-        weight: 1,
         opacity: 0.4,
         fillOpacity: 0.05,
       });
     } else {
       cell.on("click", () => {
-        console.log(`Clicked token ${val} at (${i}, ${j})`);
+        if (heldToken !== null) return;
+        if (cell.tokenValue === 0) return;
+
+        heldToken = cell.tokenValue;
+        updateHeldTokenUI();
+
+        cell.tokenValue = 0;
+        cell.setStyle({ fillOpacity: 0 });
+
+        if (cell.labelMarker !== null) {
+          map.removeLayer(cell.labelMarker);
+          cell.labelMarker = null;
+        }
       });
     }
 
@@ -145,7 +168,8 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
         iconSize: [0, 0],
       });
 
-      leaflet.marker(cellCenter(i, j), { icon }).addTo(map);
+      const marker = leaflet.marker(cellCenter(i, j), { icon }).addTo(map);
+      cell.labelMarker = marker;
     }
   }
 }

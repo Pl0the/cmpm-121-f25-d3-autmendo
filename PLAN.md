@@ -25,7 +25,7 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] draw the player's location on the map
 - [x] draw a rectangle representing one cell on the map
 - [x] use loops to draw a whole grid of cells on the map
-- [ ] find luck value of token
+- [x] find luck value of token
 - [ ] visibly show luck value of each token
 - [ ] make only nearby cells interactable
 - [ ] allow player to pick up tokens

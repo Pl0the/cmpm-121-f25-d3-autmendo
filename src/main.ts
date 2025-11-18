@@ -7,6 +7,8 @@ import "./style.css";
 
 import "./_leafletWorkaround.ts";
 
+import luck from "./_luck.ts";
+
 // UI elements
 
 const controlPanelDiv = document.createElement("div");
@@ -33,6 +35,8 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 const GAMEPLAY_ZOOM_LEVEL = 19;
 
 const TILE_DEGREES = 0.0001;
+
+const GRID_RADIUS = 24;
 
 // Map creation
 
@@ -76,14 +80,33 @@ function Bounds(i: number, j: number): leaflet.LatLngBounds {
   );
 }
 
-const GRID_RADIUS = 24;
+// grid and tokens
+
+function tokenValue(i: number, j: number): number {
+  const r = luck(`${i},${j}`);
+
+  if (r < 0.7) return 0;
+  if (r < 0.775) return 1;
+  if (r < 0.85) return 2;
+  if (r < 0.925) return 4;
+  return 8;
+}
+
+interface TokenCell extends leaflet.Rectangle {
+  tokenValue: number;
+}
 
 for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
   for (let j = -GRID_RADIUS; j <= GRID_RADIUS; j++) {
+    const val = tokenValue(i, j);
+
     const cell = leaflet.rectangle(Bounds(i, j), {
       color: "#1326cdff",
       weight: 1,
-    });
+    }) as TokenCell;
+
+    cell.tokenValue = val;
+
     cell.addTo(map);
   }
 }

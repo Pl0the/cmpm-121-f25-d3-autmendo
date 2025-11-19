@@ -83,7 +83,7 @@ const INTERACTION_RADIUS = 3;
 
 let heldToken: number | null = null;
 
-let playerGrid = { i: 0, j: 0 };
+const playerGrid = { i: 0, j: 0 };
 
 // Map creation
 

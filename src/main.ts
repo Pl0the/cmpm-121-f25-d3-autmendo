@@ -16,13 +16,50 @@ controlPanelDiv.id = "controlPanel";
 controlPanelDiv.textContent = "UCSC Token Crafter";
 document.body.append(controlPanelDiv);
 
+/// Movement control
+
+const movementDiv = document.createElement("div");
+movementDiv.id = "movementControls";
+movementDiv.innerHTML = `
+  <button id="moveN">↓</button>
+  <button id="moveW">←</button>
+  <button id="moveE">→</button>
+  <button id="moveS">↑</button>
+`;
+controlPanelDiv.append(movementDiv);
+
+function movePlayer(di: number, dj: number) {
+  playerGrid.i += di;
+  playerGrid.j += dj;
+  updatePlayerMarker();
+  updateStatusUI();
+}
+
+document.getElementById("moveN")!.addEventListener(
+  "click",
+  () => movePlayer(-1, 0),
+);
+document.getElementById("moveS")!.addEventListener(
+  "click",
+  () => movePlayer(1, 0),
+);
+document.getElementById("moveW")!.addEventListener(
+  "click",
+  () => movePlayer(0, -1),
+);
+document.getElementById("moveE")!.addEventListener(
+  "click",
+  () => movePlayer(0, 1),
+);
+
+// UI elements continued
+
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
 document.body.append(mapDiv);
 
 const statusPanelDiv = document.createElement("div");
 statusPanelDiv.id = "statusPanel";
-statusPanelDiv.textContent = "Held token: (none)";
 document.body.append(statusPanelDiv);
 
 const messageDiv = document.createElement("div");
@@ -45,6 +82,8 @@ const GRID_RADIUS = 24;
 const INTERACTION_RADIUS = 3;
 
 let heldToken: number | null = null;
+
+let playerGrid = { i: 0, j: 0 };
 
 // Map creation
 
@@ -74,6 +113,14 @@ const playerMarker = leaflet.marker(CLASSROOM_LATLNG, {
 playerMarker.bindTooltip("You are here!");
 playerMarker.addTo(map);
 
+function updatePlayerMarker() {
+  const pos = leaflet.latLng(
+    CLASSROOM_LATLNG.lat + playerGrid.i * TILE_DEGREES,
+    CLASSROOM_LATLNG.lng + playerGrid.j * TILE_DEGREES,
+  );
+  playerMarker.setLatLng(pos);
+}
+
 function Bounds(i: number, j: number): leaflet.LatLngBounds {
   const origin = CLASSROOM_LATLNG;
   return leaflet.latLngBounds(
@@ -87,6 +134,8 @@ function Bounds(i: number, j: number): leaflet.LatLngBounds {
     ],
   );
 }
+
+updatePlayerMarker();
 
 // grid and tokens
 
@@ -112,12 +161,10 @@ function cellDistanceFromPlayer(i: number, j: number): number {
   return Math.max(Math.abs(i), Math.abs(j));
 }
 
-function updateHeldTokenUI() {
-  if (heldToken === null) {
-    statusPanelDiv.textContent = "Held token: (none)";
-  } else {
-    statusPanelDiv.textContent = `Held token: ${heldToken}`;
-  }
+function updateStatusUI() {
+  const heldText = heldToken === null ? "(none)" : heldToken.toString();
+  statusPanelDiv.textContent =
+    `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
 interface TokenCell extends leaflet.Rectangle {
@@ -149,12 +196,11 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
       });
     } else {
       cell.on("click", () => {
-        // PICKUP MODE
         if (heldToken === null) {
           if (cell.tokenValue === 0) return;
 
           heldToken = cell.tokenValue;
-          updateHeldTokenUI();
+          updateStatusUI();
 
           cell.tokenValue = 0;
           cell.setStyle({ fillOpacity: 0 });
@@ -166,7 +212,6 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
           return;
         }
 
-        // CRAFTING MODE
         if (heldToken !== cell.tokenValue) return;
 
         const newValue = heldToken * 2;
@@ -186,7 +231,7 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
         cell.labelMarker = marker;
 
         heldToken = null;
-        updateHeldTokenUI();
+        updateStatusUI();
 
         if (newValue >= 16) {
           messageDiv.textContent = `You crafted a ${newValue} Token!`;

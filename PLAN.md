@@ -1,4 +1,4 @@
-# D3: {game title goes here}
+# D3: {Grid crafter}
 
 ## Game Design Vision
 
@@ -17,7 +17,7 @@ The player can collect tokens and use them based on their value to combine them 
 Key technical challenge: Can you assemble a map-based user interface using the Leaflet mapping framework?
 Key gameplay challenge: Can players collect and craft tokens from nearby locations to finally make one of sufficiently high value?
 
-### Steps
+### D3.a Steps
 
 - [x] copy main.ts to reference.ts for future reference
 - [x] delete everything in main.ts
@@ -31,3 +31,16 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] allow player to pick up tokens and display them
 - [x] implement crafting tokens
 - [x] cleanup and finish with D3.a
+
+## D3.b Globe-spanning Gameplay
+
+### D3.b Steps
+
+- [x] Add player movement and update UI accordingly
+- [ ] Create new data type for modeling grid cells
+- [ ] Spawn only nearby cells, and make them visible to the end of the map
+- [ ] implement grid anchor and genrate grids infinitely
+- [ ] add memoryless cells for the tokens value
+- [ ] make an end game state foir the game
+- [ ] allow the player to scroll map without moving charcter and see cells as they move
+- [ ] final polish and cleanup with D3.b

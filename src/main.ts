@@ -9,6 +9,29 @@ import "./_leafletWorkaround.ts";
 
 import luck from "./_luck.ts";
 
+// Grid cell Setup
+
+interface GridCellID {
+  i: number;
+  j: number;
+}
+
+function cellToBounds(cell: GridCellID): leaflet.LatLngBounds {
+  const lat1 = cell.i * TILE_DEGREES;
+  const lng1 = cell.j * TILE_DEGREES;
+  const lat2 = (cell.i + 1) * TILE_DEGREES;
+  const lng2 = (cell.j + 1) * TILE_DEGREES;
+
+  return leaflet.latLngBounds([lat1, lng1], [lat2, lng2]);
+}
+
+function cellToCenter(cell: GridCellID): leaflet.LatLng {
+  return leaflet.latLng(
+    (cell.i + 0.5) * TILE_DEGREES,
+    (cell.j + 0.5) * TILE_DEGREES,
+  );
+}
+
 // UI elements
 
 const controlPanelDiv = document.createElement("div");
@@ -121,20 +144,6 @@ function updatePlayerMarker() {
   playerMarker.setLatLng(pos);
 }
 
-function Bounds(i: number, j: number): leaflet.LatLngBounds {
-  const origin = CLASSROOM_LATLNG;
-  return leaflet.latLngBounds(
-    [
-      origin.lat + i * TILE_DEGREES,
-      origin.lng + j * TILE_DEGREES,
-    ],
-    [
-      origin.lat + (i + 1) * TILE_DEGREES,
-      origin.lng + (j + 1) * TILE_DEGREES,
-    ],
-  );
-}
-
 updatePlayerMarker();
 
 // grid and tokens
@@ -147,14 +156,6 @@ function tokenValue(i: number, j: number): number {
   if (r < 0.85) return 2;
   if (r < 0.925) return 4;
   return 8;
-}
-
-function cellCenter(i: number, j: number): leaflet.LatLng {
-  const origin = CLASSROOM_LATLNG;
-  return leaflet.latLng(
-    origin.lat + (i + 0.5) * TILE_DEGREES,
-    origin.lng + (j + 0.5) * TILE_DEGREES,
-  );
 }
 
 function cellDistanceFromPlayer(i: number, j: number): number {
@@ -174,9 +175,10 @@ interface TokenCell extends leaflet.Rectangle {
 
 for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
   for (let j = -GRID_RADIUS; j <= GRID_RADIUS; j++) {
+    const cellID: GridCellID = { i, j };
     const val = tokenValue(i, j);
 
-    const cell = leaflet.rectangle(Bounds(i, j), {
+    const cell = leaflet.rectangle(cellToBounds(cellID), {
       color: "#1326cdff",
       weight: 1,
     }) as TokenCell;
@@ -209,6 +211,7 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
             map.removeLayer(cell.labelMarker);
             cell.labelMarker = null;
           }
+
           return;
         }
 
@@ -227,7 +230,9 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
           iconSize: [0, 0],
         });
 
-        const marker = leaflet.marker(cellCenter(i, j), { icon }).addTo(map);
+        const marker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(
+          map,
+        );
         cell.labelMarker = marker;
 
         heldToken = null;
@@ -246,7 +251,7 @@ for (let i = -GRID_RADIUS; i <= GRID_RADIUS; i++) {
         iconSize: [0, 0],
       });
 
-      const marker = leaflet.marker(cellCenter(i, j), { icon }).addTo(map);
+      const marker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
       cell.labelMarker = marker;
     }
   }

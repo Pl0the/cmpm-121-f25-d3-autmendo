@@ -26,7 +26,7 @@ let heldToken: number | null = null;
 
 const playerGrid = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng);
 
-// Flyweight style objects
+// Flyweight styles
 
 const flyweightCellStyleActive = {
   color: "#1326cdff",
@@ -40,6 +40,23 @@ const flyweightCellStyleInactive = {
   opacity: 0.4,
   fillOpacity: 0.05,
 };
+
+// Memento pattern
+
+interface CellMemento {
+  token: number;
+}
+
+const mementoMap = new Map<string, CellMemento>();
+
+function createMemento(cell: GridCellID, token: number) {
+  mementoMap.set(cellKey(cell), { token });
+}
+
+function restoreMemento(cell: GridCellID): number | null {
+  const m = mementoMap.get(cellKey(cell));
+  return m ? m.token : null;
+}
 
 // Grid functions
 
@@ -60,7 +77,6 @@ function cellToBounds(cell: GridCellID): leaflet.LatLngBounds {
   const lng1 = cell.j * TILE_DEGREES;
   const lat2 = (cell.i + 1) * TILE_DEGREES;
   const lng2 = (cell.j + 1) * TILE_DEGREES;
-
   return leaflet.latLngBounds([lat1, lng1], [lat2, lng2]);
 }
 
@@ -75,8 +91,6 @@ function cellKey(c: GridCellID): string {
   return `${c.i},${c.j}`;
 }
 
-const tokenMap = new Map<string, number>();
-
 function tokenValueDefault(i: number, j: number): number {
   const r = luck(`${i},${j}`);
   if (r < 0.7) return 0;
@@ -87,14 +101,14 @@ function tokenValueDefault(i: number, j: number): number {
 }
 
 function getTokenValue(cell: GridCellID): number {
-  const key = cellKey(cell);
-  if (tokenMap.has(key)) return tokenMap.get(key)!;
+  const restored = restoreMemento(cell);
+  if (restored !== null) return restored;
+
   return tokenValueDefault(cell.i, cell.j);
 }
 
 function setTokenValue(cell: GridCellID, value: number) {
-  const key = cellKey(cell);
-  tokenMap.set(key, value);
+  createMemento(cell, value);
 }
 
 const visibleCells = new Map<string, TokenCell>();
@@ -154,8 +168,6 @@ const messageDiv = document.createElement("div");
 messageDiv.id = "messagePanel";
 document.body.append(messageDiv);
 
-// map
-
 const map = leaflet.map(mapDiv, {
   center: CLASSROOM_LATLNG,
   zoom: GAMEPLAY_ZOOM_LEVEL,
@@ -165,13 +177,11 @@ const map = leaflet.map(mapDiv, {
   scrollWheelZoom: false,
 });
 
-leaflet
-  .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    maxZoom: GAMEPLAY_ZOOM_LEVEL,
-    attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  })
-  .addTo(map);
+leaflet.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  maxZoom: GAMEPLAY_ZOOM_LEVEL,
+  attribution:
+    '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+}).addTo(map);
 
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG, {
   title: "You are here",
@@ -202,8 +212,6 @@ function updateStatusUI() {
   statusPanelDiv.textContent =
     `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
-
-// Flyweight token cell
 
 interface TokenCell extends leaflet.Rectangle {
   tokenValue: number;

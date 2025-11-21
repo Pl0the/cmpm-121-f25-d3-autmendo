@@ -26,7 +26,7 @@ let heldToken: number | null = null;
 
 const playerGrid = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng);
 
-// Grid cell Setup
+// Grid functions
 
 interface GridCellID {
   i: number;
@@ -56,20 +56,40 @@ function cellToCenter(cell: GridCellID): leaflet.LatLng {
   );
 }
 
-const visibleCells = new Map<string, TokenCell>();
-
 function cellKey(c: GridCellID): string {
   return `${c.i},${c.j}`;
 }
 
-// UI elements
+const tokenMap = new Map<string, number>();
+
+function tokenValueDefault(i: number, j: number): number {
+  const r = luck(`${i},${j}`);
+  if (r < 0.7) return 0;
+  if (r < 0.775) return 1;
+  if (r < 0.85) return 2;
+  if (r < 0.925) return 4;
+  return 8;
+}
+
+function getTokenValue(cell: GridCellID): number {
+  const key = cellKey(cell);
+  if (tokenMap.has(key)) return tokenMap.get(key)!;
+  return tokenValueDefault(cell.i, cell.j);
+}
+
+function setTokenValue(cell: GridCellID, value: number) {
+  const key = cellKey(cell);
+  tokenMap.set(key, value);
+}
+
+const visibleCells = new Map<string, TokenCell>();
+
+// UI
 
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
 controlPanelDiv.textContent = "UCSC Token Crafter";
 document.body.append(controlPanelDiv);
-
-/// Movement control
 
 const movementDiv = document.createElement("div");
 movementDiv.id = "movementControls";
@@ -90,24 +110,10 @@ function movePlayer(di: number, dj: number) {
   renderVisibleCells();
 }
 
-document.getElementById("moveN")!.addEventListener(
-  "click",
-  () => movePlayer(-1, 0),
-);
-document.getElementById("moveS")!.addEventListener(
-  "click",
-  () => movePlayer(1, 0),
-);
-document.getElementById("moveW")!.addEventListener(
-  "click",
-  () => movePlayer(0, -1),
-);
-document.getElementById("moveE")!.addEventListener(
-  "click",
-  () => movePlayer(0, 1),
-);
-
-// UI elements continued
+document.getElementById("moveN")!.addEventListener("click", () => movePlayer(-1, 0));
+document.getElementById("moveS")!.addEventListener("click", () => movePlayer(1, 0));
+document.getElementById("moveW")!.addEventListener("click", () => movePlayer(0, -1));
+document.getElementById("moveE")!.addEventListener("click", () => movePlayer(0, 1));
 
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
@@ -121,7 +127,7 @@ const messageDiv = document.createElement("div");
 messageDiv.id = "messagePanel";
 document.body.append(messageDiv);
 
-// Map creation
+// map
 
 const map = leaflet.map(mapDiv, {
   center: CLASSROOM_LATLNG,
@@ -135,12 +141,9 @@ const map = leaflet.map(mapDiv, {
 leaflet
   .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: GAMEPLAY_ZOOM_LEVEL,
-    attribution:
-      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   })
   .addTo(map);
-
-// Player marker
 
 const playerMarker = leaflet.marker(CLASSROOM_LATLNG, {
   title: "You are here",
@@ -154,23 +157,10 @@ function updatePlayerMarker() {
     playerGrid.i * TILE_DEGREES,
     playerGrid.j * TILE_DEGREES,
   );
-
   playerMarker.setLatLng(pos);
 }
 
 updatePlayerMarker();
-
-// grid and tokens
-
-function tokenValue(i: number, j: number): number {
-  const r = luck(`${i},${j}`);
-
-  if (r < 0.7) return 0;
-  if (r < 0.775) return 1;
-  if (r < 0.85) return 2;
-  if (r < 0.925) return 4;
-  return 8;
-}
 
 function cellDistanceFromPlayer(cell: GridCellID): number {
   return Math.max(
@@ -181,8 +171,7 @@ function cellDistanceFromPlayer(cell: GridCellID): number {
 
 function updateStatusUI() {
   const heldText = heldToken === null ? "(none)" : heldToken.toString();
-  statusPanelDiv.textContent =
-    `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
+  statusPanelDiv.textContent = `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
 interface TokenCell extends leaflet.Rectangle {
@@ -193,36 +182,17 @@ interface TokenCell extends leaflet.Rectangle {
 
 function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
   const dist = cellDistanceFromPlayer(cellID);
-  const isInteractableNow = dist <= INTERACTION_RADIUS;
+  const isInteractable = dist <= INTERACTION_RADIUS;
+  cell.isInteractable = isInteractable;
 
-  if (cell.isInteractable && !isInteractableNow) {
-    cell.tokenValue = tokenValue(cellID.i, cellID.j);
-    if (cell.labelMarker) {
-      map.removeLayer(cell.labelMarker);
-      cell.labelMarker = null;
-    }
-  }
-
-  cell.isInteractable = isInteractableNow;
-
-  if (!isInteractableNow) {
-    cell.setStyle({
-      color: "#555555",
-      opacity: 0.4,
-      fillOpacity: 0.05,
-    });
-
+  if (!isInteractable) {
+    cell.setStyle({ color: "#555555", opacity: 0.4, fillOpacity: 0.05 });
     if (cell.labelMarker) {
       map.removeLayer(cell.labelMarker);
       cell.labelMarker = null;
     }
   } else {
-    cell.setStyle({
-      color: "#1326cdff",
-      weight: 1,
-      opacity: 1,
-      fillOpacity: 0.15,
-    });
+    cell.setStyle({ color: "#1326cdff", weight: 1, opacity: 1, fillOpacity: 0.15 });
 
     if (cell.tokenValue !== 0 && !cell.labelMarker) {
       const icon = leaflet.divIcon({
@@ -230,9 +200,7 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
         html: `<span>${cell.tokenValue}</span>`,
         iconSize: [0, 0],
       });
-      cell.labelMarker = leaflet
-        .marker(cellToCenter(cellID), { icon })
-        .addTo(map);
+      cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
     }
   }
 }
@@ -260,6 +228,8 @@ function renderVisibleCells() {
       if (!cell) {
         cell = spawnCell(cellID);
       }
+
+      cell.tokenValue = getTokenValue(cellID);
       updateCellStyle(cell, cellID);
     }
   }
@@ -280,8 +250,9 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   if (heldToken === null) {
     if (cell.tokenValue === 0) return;
 
+    // pick up
     heldToken = cell.tokenValue;
-    cell.tokenValue = 0;
+    setTokenValue(cellID, 0);
 
     if (cell.labelMarker) {
       map.removeLayer(cell.labelMarker);
@@ -293,20 +264,16 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   }
 
   if (cell.tokenValue === 0) {
-    cell.tokenValue = heldToken;
+    setTokenValue(cellID, heldToken);
 
-    const iconDrop = leaflet.divIcon({
+    const icon = leaflet.divIcon({
       className: "token-label",
-      html: `<span>${cell.tokenValue}</span>`,
+      html: `<span>${heldToken}</span>`,
       iconSize: [0, 0],
     });
 
-    if (cell.labelMarker) {
-      map.removeLayer(cell.labelMarker);
-    }
-    cell.labelMarker = leaflet
-      .marker(cellToCenter(cellID), { icon: iconDrop })
-      .addTo(map);
+    if (cell.labelMarker) map.removeLayer(cell.labelMarker);
+    cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
 
     heldToken = null;
     updateStatusUI();
@@ -316,8 +283,7 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   if (heldToken !== cell.tokenValue) return;
 
   const newValue = heldToken * 2;
-
-  cell.tokenValue = newValue;
+  setTokenValue(cellID, newValue);
 
   if (cell.labelMarker) map.removeLayer(cell.labelMarker);
 
@@ -338,7 +304,7 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
 }
 
 function spawnCell(cellID: GridCellID): TokenCell {
-  const val = tokenValue(cellID.i, cellID.j);
+  const val = getTokenValue(cellID);
 
   const cell = leaflet.rectangle(cellToBounds(cellID), {
     color: "#1326cdff",

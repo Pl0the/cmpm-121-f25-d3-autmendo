@@ -47,4 +47,7 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 
 ### D3.c Steps
 
--[ ]
+-[x] add a map datatype for the tokens
+-[ ] apply flyweight pattern to cells
+-[ ] apply momento pattern for the cells that we crafted in
+-[ ] final polish and cleanup with D3.c

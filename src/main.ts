@@ -26,6 +26,21 @@ let heldToken: number | null = null;
 
 const playerGrid = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng);
 
+// Flyweight style objects
+
+const flyweightCellStyleActive = {
+  color: "#1326cdff",
+  weight: 1,
+  opacity: 1,
+  fillOpacity: 0.15,
+};
+
+const flyweightCellStyleInactive = {
+  color: "#555555",
+  opacity: 0.4,
+  fillOpacity: 0.05,
+};
+
 // Grid functions
 
 interface GridCellID {
@@ -188,6 +203,8 @@ function updateStatusUI() {
     `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
+// Flyweight token cell
+
 interface TokenCell extends leaflet.Rectangle {
   tokenValue: number;
   labelMarker: leaflet.Marker | null;
@@ -200,18 +217,13 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
   cell.isInteractable = isInteractable;
 
   if (!isInteractable) {
-    cell.setStyle({ color: "#555555", opacity: 0.4, fillOpacity: 0.05 });
+    cell.setStyle(flyweightCellStyleInactive);
     if (cell.labelMarker) {
       map.removeLayer(cell.labelMarker);
       cell.labelMarker = null;
     }
   } else {
-    cell.setStyle({
-      color: "#1326cdff",
-      weight: 1,
-      opacity: 1,
-      fillOpacity: 0.15,
-    });
+    cell.setStyle(flyweightCellStyleActive);
 
     if (cell.tokenValue !== 0 && !cell.labelMarker) {
       const icon = leaflet.divIcon({
@@ -271,7 +283,6 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   if (heldToken === null) {
     if (cell.tokenValue === 0) return;
 
-    // pick up
     heldToken = cell.tokenValue;
     setTokenValue(cellID, 0);
 
@@ -329,10 +340,10 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
 function spawnCell(cellID: GridCellID): TokenCell {
   const val = getTokenValue(cellID);
 
-  const cell = leaflet.rectangle(cellToBounds(cellID), {
-    color: "#1326cdff",
-    weight: 1,
-  }) as TokenCell;
+  const cell = leaflet.rectangle(
+    cellToBounds(cellID),
+    flyweightCellStyleActive,
+  ) as TokenCell;
 
   cell.tokenValue = val;
   cell.labelMarker = null;

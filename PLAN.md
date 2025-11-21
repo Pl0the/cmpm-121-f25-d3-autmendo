@@ -40,6 +40,11 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 - [x] Create new data type then anchor grid to center
 - [x] Spawn only nearby cells, and make them visible to the end of the map
 - [x] add memoryless cells for the tokens value
-- [ ] make an end game state for the game
-- [ ] allow the player to scroll map without moving charcter and see cells as they move
-- [ ] final polish and cleanup with D3.b
+- [x] make an end game state for the game
+- [x] final polish and cleanup with D3.b
+
+## D3.c Object Persistence
+
+### D3.c Steps
+
+-[ ]

@@ -332,8 +332,8 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   heldToken = null;
   updateStatusUI();
 
-  if (newValue >= 16) {
-    messageDiv.textContent = `You crafted a ${newValue} token!`;
+  if (newValue >= 32) {
+    messageDiv.textContent = `You win! You crafted a ${newValue} token!`;
   }
 }
 

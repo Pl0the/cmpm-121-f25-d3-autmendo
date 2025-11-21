@@ -110,10 +110,22 @@ function movePlayer(di: number, dj: number) {
   renderVisibleCells();
 }
 
-document.getElementById("moveN")!.addEventListener("click", () => movePlayer(-1, 0));
-document.getElementById("moveS")!.addEventListener("click", () => movePlayer(1, 0));
-document.getElementById("moveW")!.addEventListener("click", () => movePlayer(0, -1));
-document.getElementById("moveE")!.addEventListener("click", () => movePlayer(0, 1));
+document.getElementById("moveN")!.addEventListener(
+  "click",
+  () => movePlayer(-1, 0),
+);
+document.getElementById("moveS")!.addEventListener(
+  "click",
+  () => movePlayer(1, 0),
+);
+document.getElementById("moveW")!.addEventListener(
+  "click",
+  () => movePlayer(0, -1),
+);
+document.getElementById("moveE")!.addEventListener(
+  "click",
+  () => movePlayer(0, 1),
+);
 
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
@@ -141,7 +153,8 @@ const map = leaflet.map(mapDiv, {
 leaflet
   .tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
     maxZoom: GAMEPLAY_ZOOM_LEVEL,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    attribution:
+      '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   })
   .addTo(map);
 
@@ -171,7 +184,8 @@ function cellDistanceFromPlayer(cell: GridCellID): number {
 
 function updateStatusUI() {
   const heldText = heldToken === null ? "(none)" : heldToken.toString();
-  statusPanelDiv.textContent = `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
+  statusPanelDiv.textContent =
+    `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
 interface TokenCell extends leaflet.Rectangle {
@@ -192,7 +206,12 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
       cell.labelMarker = null;
     }
   } else {
-    cell.setStyle({ color: "#1326cdff", weight: 1, opacity: 1, fillOpacity: 0.15 });
+    cell.setStyle({
+      color: "#1326cdff",
+      weight: 1,
+      opacity: 1,
+      fillOpacity: 0.15,
+    });
 
     if (cell.tokenValue !== 0 && !cell.labelMarker) {
       const icon = leaflet.divIcon({
@@ -200,7 +219,9 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
         html: `<span>${cell.tokenValue}</span>`,
         iconSize: [0, 0],
       });
-      cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
+      cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(
+        map,
+      );
     }
   }
 }
@@ -273,7 +294,9 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     });
 
     if (cell.labelMarker) map.removeLayer(cell.labelMarker);
-    cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
+    cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(
+      map,
+    );
 
     heldToken = null;
     updateStatusUI();

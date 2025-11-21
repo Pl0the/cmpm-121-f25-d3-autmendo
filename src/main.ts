@@ -188,18 +188,34 @@ function updateStatusUI() {
 interface TokenCell extends leaflet.Rectangle {
   tokenValue: number;
   labelMarker: leaflet.Marker | null;
+  isInteractable: boolean;
 }
 
 function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
   const dist = cellDistanceFromPlayer(cellID);
-  const isInteractable = dist <= INTERACTION_RADIUS;
+  const isInteractableNow = dist <= INTERACTION_RADIUS;
 
-  if (!isInteractable) {
+  if (cell.isInteractable && !isInteractableNow) {
+    cell.tokenValue = tokenValue(cellID.i, cellID.j);
+    if (cell.labelMarker) {
+      map.removeLayer(cell.labelMarker);
+      cell.labelMarker = null;
+    }
+  }
+
+  cell.isInteractable = isInteractableNow;
+
+  if (!isInteractableNow) {
     cell.setStyle({
       color: "#555555",
       opacity: 0.4,
       fillOpacity: 0.05,
     });
+
+    if (cell.labelMarker) {
+      map.removeLayer(cell.labelMarker);
+      cell.labelMarker = null;
+    }
   } else {
     cell.setStyle({
       color: "#1326cdff",
@@ -207,6 +223,17 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
       opacity: 1,
       fillOpacity: 0.15,
     });
+
+    if (cell.tokenValue !== 0 && !cell.labelMarker) {
+      const icon = leaflet.divIcon({
+        className: "token-label",
+        html: `<span>${cell.tokenValue}</span>`,
+        iconSize: [0, 0],
+      });
+      cell.labelMarker = leaflet
+        .marker(cellToCenter(cellID), { icon })
+        .addTo(map);
+    }
   }
 }
 
@@ -248,27 +275,48 @@ function renderVisibleCells() {
 }
 
 function handleCellClick(cell: TokenCell, cellID: GridCellID) {
-  if (cellDistanceFromPlayer(cellID) > INTERACTION_RADIUS) return;
+  if (!cell.isInteractable) return;
 
   if (heldToken === null) {
     if (cell.tokenValue === 0) return;
 
     heldToken = cell.tokenValue;
-    updateStatusUI();
-
     cell.tokenValue = 0;
-    cell.setStyle({ fillOpacity: 0 });
 
     if (cell.labelMarker) {
       map.removeLayer(cell.labelMarker);
       cell.labelMarker = null;
     }
+
+    updateStatusUI();
+    return;
+  }
+
+  if (cell.tokenValue === 0) {
+    cell.tokenValue = heldToken;
+
+    const iconDrop = leaflet.divIcon({
+      className: "token-label",
+      html: `<span>${cell.tokenValue}</span>`,
+      iconSize: [0, 0],
+    });
+
+    if (cell.labelMarker) {
+      map.removeLayer(cell.labelMarker);
+    }
+    cell.labelMarker = leaflet
+      .marker(cellToCenter(cellID), { icon: iconDrop })
+      .addTo(map);
+
+    heldToken = null;
+    updateStatusUI();
     return;
   }
 
   if (heldToken !== cell.tokenValue) return;
 
   const newValue = heldToken * 2;
+
   cell.tokenValue = newValue;
 
   if (cell.labelMarker) map.removeLayer(cell.labelMarker);
@@ -299,22 +347,12 @@ function spawnCell(cellID: GridCellID): TokenCell {
 
   cell.tokenValue = val;
   cell.labelMarker = null;
+  cell.isInteractable = false;
 
   visibleCells.set(cellKey(cellID), cell);
   cell.addTo(map);
 
   cell.on("click", () => handleCellClick(cell, cellID));
-
-  if (val !== 0) {
-    const icon = leaflet.divIcon({
-      className: "token-label",
-      html: `<span>${val}</span>`,
-      iconSize: [0, 0],
-    });
-
-    const marker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
-    cell.labelMarker = marker;
-  }
 
   return cell;
 }

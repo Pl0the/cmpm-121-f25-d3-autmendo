@@ -288,11 +288,13 @@ function renderVisibleCells() {
 function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   if (!cell.isInteractable) return;
 
+  // Pick up
   if (heldToken === null) {
     if (cell.tokenValue === 0) return;
 
     heldToken = cell.tokenValue;
     setTokenValue(cellID, 0);
+    cell.tokenValue = 0;
 
     if (cell.labelMarker) {
       map.removeLayer(cell.labelMarker);
@@ -303,8 +305,10 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     return;
   }
 
+  // Drop
   if (cell.tokenValue === 0) {
     setTokenValue(cellID, heldToken);
+    cell.tokenValue = heldToken!;
 
     const icon = leaflet.divIcon({
       className: "token-label",
@@ -326,6 +330,7 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
 
   const newValue = heldToken * 2;
   setTokenValue(cellID, newValue);
+  cell.tokenValue = newValue;
 
   if (cell.labelMarker) map.removeLayer(cell.labelMarker);
 

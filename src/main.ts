@@ -16,7 +16,25 @@ interface MovementController {
   stop(): void;
 }
 
-// Game constants
+// movement controller stubs
+
+class ButtonMovementController implements MovementController {
+  start(onMove: (di: number, dj: number) => void): void {
+    document.getElementById("moveN")!.onclick = () => onMove(-1, 0);
+    document.getElementById("moveS")!.onclick = () => onMove(1, 0);
+    document.getElementById("moveW")!.onclick = () => onMove(0, -1);
+    document.getElementById("moveE")!.onclick = () => onMove(0, 1);
+  }
+
+  stop(): void {
+    document.getElementById("moveN")!.onclick = null;
+    document.getElementById("moveS")!.onclick = null;
+    document.getElementById("moveW")!.onclick = null;
+    document.getElementById("moveE")!.onclick = null;
+  }
+}
+
+// game constants
 
 const CLASSROOM_LATLNG = leaflet.latLng(
   36.997936938057016,
@@ -24,16 +42,14 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 );
 
 const GAMEPLAY_ZOOM_LEVEL = 19;
-
 const TILE_DEGREES = 0.0001;
-
 const INTERACTION_RADIUS = 3;
 
 let heldToken: number | null = null;
 
 const playerGrid = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng);
 
-// Flyweight styles
+// flyweight styles
 
 const flyweightCellStyleActive = {
   color: "#1326cdff",
@@ -48,7 +64,7 @@ const flyweightCellStyleInactive = {
   fillOpacity: 0.05,
 };
 
-// Memento pattern
+// memento pattern
 
 interface CellMemento {
   token: number;
@@ -65,7 +81,7 @@ function restoreMemento(cell: GridCellID): number | null {
   return m ? m.token : null;
 }
 
-// Grid functions
+// grid functions
 
 interface GridCellID {
   i: number;
@@ -110,7 +126,6 @@ function tokenValueDefault(i: number, j: number): number {
 function getTokenValue(cell: GridCellID): number {
   const restored = restoreMemento(cell);
   if (restored !== null) return restored;
-
   return tokenValueDefault(cell.i, cell.j);
 }
 
@@ -120,7 +135,7 @@ function setTokenValue(cell: GridCellID, value: number) {
 
 const visibleCells = new Map<string, TokenCell>();
 
-// UI
+// ui setup
 
 const controlPanelDiv = document.createElement("div");
 controlPanelDiv.id = "controlPanel";
@@ -137,6 +152,8 @@ movementDiv.innerHTML = `
 `;
 controlPanelDiv.append(movementDiv);
 
+// player movement
+
 function movePlayer(di: number, dj: number) {
   playerGrid.i += di;
   playerGrid.j += dj;
@@ -146,22 +163,12 @@ function movePlayer(di: number, dj: number) {
   renderVisibleCells();
 }
 
-const movementController: MovementController = {
-  start(onMove) {
-    document.getElementById("moveN")!.onclick = () => onMove(-1, 0);
-    document.getElementById("moveS")!.onclick = () => onMove(1, 0);
-    document.getElementById("moveW")!.onclick = () => onMove(0, -1);
-    document.getElementById("moveE")!.onclick = () => onMove(0, 1);
-  },
-  stop() {
-    document.getElementById("moveN")!.onclick = null;
-    document.getElementById("moveS")!.onclick = null;
-    document.getElementById("moveW")!.onclick = null;
-    document.getElementById("moveE")!.onclick = null;
-  },
-};
+// movement controller selection (step 2)
 
+const movementController = new ButtonMovementController();
 movementController.start((di, dj) => movePlayer(di, dj));
+
+// map ui
 
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";
@@ -220,6 +227,8 @@ function updateStatusUI() {
     `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
+// token cell
+
 interface TokenCell extends leaflet.Rectangle {
   tokenValue: number;
   labelMarker: leaflet.Marker | null;
@@ -252,6 +261,8 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
     }
   }
 }
+
+// visible rendering
 
 function renderVisibleCells() {
   const bounds = map.getBounds();
@@ -292,10 +303,11 @@ function renderVisibleCells() {
   }
 }
 
+// cell click handlers
+
 function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   if (!cell.isInteractable) return;
 
-  // Pick up
   if (heldToken === null) {
     if (cell.tokenValue === 0) return;
 
@@ -312,7 +324,6 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     return;
   }
 
-  // Drop
   if (cell.tokenValue === 0) {
     setTokenValue(cellID, heldToken);
     cell.tokenValue = heldToken!;
@@ -356,6 +367,8 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     messageDiv.textContent = `You win! You crafted a ${newValue} token!`;
   }
 }
+
+// spawning cells
 
 function spawnCell(cellID: GridCellID): TokenCell {
   const val = getTokenValue(cellID);

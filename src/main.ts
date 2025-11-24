@@ -34,6 +34,67 @@ class ButtonMovementController implements MovementController {
   }
 }
 
+// geolocation movement controller
+
+class GeolocationMovementController implements MovementController {
+  private watchId: number | null = null;
+  private lastLat: number | null = null;
+  private lastLng: number | null = null;
+
+  start(onMove: (di: number, dj: number) => void): void {
+    if (!navigator.geolocation) {
+      console.warn("Geolocation not supported; controller will do nothing.");
+      return;
+    }
+
+    this.watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+
+        if (this.lastLat === null || this.lastLng === null) {
+          this.lastLat = latitude;
+          this.lastLng = longitude;
+          return;
+        }
+
+        const dLat = latitude - this.lastLat;
+        const dLng = longitude - this.lastLng;
+
+        let di = 0;
+        let dj = 0;
+
+        if (Math.abs(dLat) >= TILE_DEGREES) {
+          di = dLat > 0 ? 1 : -1;
+        }
+        if (Math.abs(dLng) >= TILE_DEGREES) {
+          dj = dLng > 0 ? 1 : -1;
+        }
+
+        if (di !== 0 || dj !== 0) {
+          this.lastLat = latitude;
+          this.lastLng = longitude;
+          onMove(di, dj);
+        }
+      },
+      (err) => {
+        console.error("Geolocation error:", err);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 1000,
+        timeout: 5000,
+      },
+    );
+  }
+
+  stop(): void {
+    if (this.watchId !== null) {
+      navigator.geolocation.clearWatch(this.watchId);
+      this.watchId = null;
+    }
+  }
+}
+
 // game constants
 
 const CLASSROOM_LATLNG = leaflet.latLng(
@@ -44,6 +105,10 @@ const CLASSROOM_LATLNG = leaflet.latLng(
 const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 0.0001;
 const INTERACTION_RADIUS = 3;
+
+// choose movement mode by query string, e.g. ?movement=geo
+const params = new URLSearchParams(window.location.search);
+const USE_GEO = params.get("movement") === "geo";
 
 let heldToken: number | null = null;
 
@@ -163,11 +228,6 @@ function movePlayer(di: number, dj: number) {
   renderVisibleCells();
 }
 
-// movement controller selection (step 2)
-
-const movementController = new ButtonMovementController();
-movementController.start((di, dj) => movePlayer(di, dj));
-
 // map ui
 
 const mapDiv = document.createElement("div");
@@ -227,6 +287,18 @@ function updateStatusUI() {
     `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
+// movement controller selection (step 3)
+
+let movementController: MovementController;
+
+if (USE_GEO) {
+  movementController = new GeolocationMovementController();
+} else {
+  movementController = new ButtonMovementController();
+}
+
+movementController.start((di, dj) => movePlayer(di, dj));
+
 // token cell
 
 interface TokenCell extends leaflet.Rectangle {
@@ -255,9 +327,9 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
         html: `<span>${cell.tokenValue}</span>`,
         iconSize: [0, 0],
       });
-      cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(
-        map,
-      );
+      cell.labelMarker = leaflet
+        .marker(cellToCenter(cellID), { icon })
+        .addTo(map);
     }
   }
 }
@@ -335,9 +407,9 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     });
 
     if (cell.labelMarker) map.removeLayer(cell.labelMarker);
-    cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(
-      map,
-    );
+    cell.labelMarker = leaflet
+      .marker(cellToCenter(cellID), { icon })
+      .addTo(map);
 
     heldToken = null;
     updateStatusUI();
@@ -358,7 +430,9 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     iconSize: [0, 0],
   });
 
-  cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
+  cell.labelMarker = leaflet
+    .marker(cellToCenter(cellID), { icon })
+    .addTo(map);
 
   heldToken = null;
   updateStatusUI();

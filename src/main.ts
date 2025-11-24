@@ -340,6 +340,15 @@ if (savedState) {
   }
 }
 
+updatePlayerMarker();
+updateStatusUI();
+renderVisibleCells();
+
+map.setView(
+  leaflet.latLng(playerGrid.i * TILE_DEGREES, playerGrid.j * TILE_DEGREES),
+  GAMEPLAY_ZOOM_LEVEL,
+);
+
 function updatePlayerMarker() {
   playerMarker.setLatLng(
     leaflet.latLng(playerGrid.i * TILE_DEGREES, playerGrid.j * TILE_DEGREES),

@@ -106,8 +106,7 @@ const GAMEPLAY_ZOOM_LEVEL = 19;
 const TILE_DEGREES = 0.0001;
 const INTERACTION_RADIUS = 3;
 
-// choose movement mode by query string, e.g. ?movement=geo
-const params = new URLSearchParams(window.location.search);
+const params = new URLSearchParams(globalThis.location.search);
 const USE_GEO = params.get("movement") === "geo";
 
 let heldToken: number | null = null;

@@ -63,5 +63,5 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 -[x] add a toggle to switch between the two movement types
 -[x] implement localstorage API for the game state
 -[x] add ability to load last game state and resume gameplay
--[ ] implement new game button to start a new game
--[ ] final polish and cleanup with D3.d
+-[x] implement new game button to start a new game
+-[x] final polish and cleanup with D3.d

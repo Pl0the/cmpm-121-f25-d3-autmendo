@@ -278,6 +278,13 @@ movementDiv.innerHTML = `
 `;
 controlPanelDiv.append(movementDiv);
 
+// NEW GAME BUTTON (added here)
+
+const newGameButton = document.createElement("button");
+newGameButton.id = "newGameButton";
+newGameButton.textContent = "New Game";
+controlPanelDiv.append(newGameButton);
+
 // movement toggle button
 
 const movementToggleButton = document.createElement("button");
@@ -371,6 +378,36 @@ function updateStatusUI() {
 }
 
 updateStatusUI();
+
+// New game functionality
+
+function startNewGame() {
+  heldToken = null;
+  mementoMap.clear();
+
+  playerGrid.i = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng).i;
+  playerGrid.j = latLngToCell(CLASSROOM_LATLNG.lat, CLASSROOM_LATLNG.lng).j;
+
+  messageDiv.textContent = "";
+
+  updatePlayerMarker();
+  map.setView(
+    leaflet.latLng(playerGrid.i * TILE_DEGREES, playerGrid.j * TILE_DEGREES),
+    GAMEPLAY_ZOOM_LEVEL,
+  );
+
+  for (const [_key, cell] of visibleCells.entries()) {
+    map.removeLayer(cell);
+    if (cell.labelMarker) map.removeLayer(cell.labelMarker);
+  }
+  visibleCells.clear();
+
+  renderVisibleCells();
+  updateStatusUI();
+  saveGameState(usingGeo);
+}
+
+newGameButton.onclick = startNewGame;
 
 // player movement
 

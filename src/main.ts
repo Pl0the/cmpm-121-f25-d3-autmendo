@@ -16,7 +16,7 @@ interface MovementController {
   stop(): void;
 }
 
-// movement controller stubs
+// button controller
 
 class ButtonMovementController implements MovementController {
   start(onMove: (di: number, dj: number) => void): void {
@@ -34,7 +34,7 @@ class ButtonMovementController implements MovementController {
   }
 }
 
-// geolocation movement controller
+// geolocation controller
 
 class GeolocationMovementController implements MovementController {
   private watchId: number | null = null;
@@ -42,10 +42,7 @@ class GeolocationMovementController implements MovementController {
   private lastLng: number | null = null;
 
   start(onMove: (di: number, dj: number) => void): void {
-    if (!navigator.geolocation) {
-      console.warn("Geolocation not supported; controller will do nothing.");
-      return;
-    }
+    if (!navigator.geolocation) return;
 
     this.watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -63,12 +60,8 @@ class GeolocationMovementController implements MovementController {
         let di = 0;
         let dj = 0;
 
-        if (Math.abs(dLat) >= TILE_DEGREES) {
-          di = dLat > 0 ? 1 : -1;
-        }
-        if (Math.abs(dLng) >= TILE_DEGREES) {
-          dj = dLng > 0 ? 1 : -1;
-        }
+        if (Math.abs(dLat) >= TILE_DEGREES) di = dLat > 0 ? 1 : -1;
+        if (Math.abs(dLng) >= TILE_DEGREES) dj = dLng > 0 ? 1 : -1;
 
         if (di !== 0 || dj !== 0) {
           this.lastLat = latitude;
@@ -76,9 +69,7 @@ class GeolocationMovementController implements MovementController {
           onMove(di, dj);
         }
       },
-      (err) => {
-        console.error("Geolocation error:", err);
-      },
+      (err) => console.warn("Geo error:", err),
       {
         enableHighAccuracy: true,
         maximumAge: 1000,
@@ -92,6 +83,30 @@ class GeolocationMovementController implements MovementController {
       navigator.geolocation.clearWatch(this.watchId);
       this.watchId = null;
     }
+  }
+}
+
+// movement facade
+
+class MovementFacade {
+  private controller: MovementController | null = null;
+
+  constructor(
+    private onMove: (di: number, dj: number) => void,
+  ) {}
+
+  useButtons() {
+    this.swapController(new ButtonMovementController());
+  }
+
+  useGeo() {
+    this.swapController(new GeolocationMovementController());
+  }
+
+  private swapController(newController: MovementController) {
+    if (this.controller) this.controller.stop();
+    this.controller = newController;
+    this.controller.start(this.onMove);
   }
 }
 
@@ -128,7 +143,7 @@ const flyweightCellStyleInactive = {
   fillOpacity: 0.05,
 };
 
-// memento pattern
+// memento
 
 interface CellMemento {
   token: number;
@@ -221,11 +236,17 @@ controlPanelDiv.append(movementDiv);
 function movePlayer(di: number, dj: number) {
   playerGrid.i += di;
   playerGrid.j += dj;
-
   updatePlayerMarker();
   updateStatusUI();
   renderVisibleCells();
 }
+
+// facade selects controller
+
+const facade = new MovementFacade((di, dj) => movePlayer(di, dj));
+
+if (USE_GEO) facade.useGeo();
+else facade.useButtons();
 
 // map ui
 
@@ -264,11 +285,9 @@ playerMarker.bindTooltip("You are here!");
 playerMarker.addTo(map);
 
 function updatePlayerMarker() {
-  const pos = leaflet.latLng(
-    playerGrid.i * TILE_DEGREES,
-    playerGrid.j * TILE_DEGREES,
+  playerMarker.setLatLng(
+    leaflet.latLng(playerGrid.i * TILE_DEGREES, playerGrid.j * TILE_DEGREES),
   );
-  playerMarker.setLatLng(pos);
 }
 
 updatePlayerMarker();
@@ -285,18 +304,6 @@ function updateStatusUI() {
   statusPanelDiv.textContent =
     `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
-
-// movement controller selection (step 3)
-
-let movementController: MovementController;
-
-if (USE_GEO) {
-  movementController = new GeolocationMovementController();
-} else {
-  movementController = new ButtonMovementController();
-}
-
-movementController.start((di, dj) => movePlayer(di, dj));
 
 // token cell
 
@@ -326,9 +333,9 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
         html: `<span>${cell.tokenValue}</span>`,
         iconSize: [0, 0],
       });
-      cell.labelMarker = leaflet
-        .marker(cellToCenter(cellID), { icon })
-        .addTo(map);
+      cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(
+        map,
+      );
     }
   }
 }
@@ -355,9 +362,7 @@ function renderVisibleCells() {
       newVisible.add(key);
 
       let cell = visibleCells.get(key);
-      if (!cell) {
-        cell = spawnCell(cellID);
-      }
+      if (!cell) cell = spawnCell(cellID);
 
       cell.tokenValue = getTokenValue(cellID);
       updateCellStyle(cell, cellID);
@@ -381,16 +386,13 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
 
   if (heldToken === null) {
     if (cell.tokenValue === 0) return;
-
     heldToken = cell.tokenValue;
     setTokenValue(cellID, 0);
     cell.tokenValue = 0;
-
     if (cell.labelMarker) {
       map.removeLayer(cell.labelMarker);
       cell.labelMarker = null;
     }
-
     updateStatusUI();
     return;
   }
@@ -398,18 +400,15 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
   if (cell.tokenValue === 0) {
     setTokenValue(cellID, heldToken);
     cell.tokenValue = heldToken!;
-
     const icon = leaflet.divIcon({
       className: "token-label",
       html: `<span>${heldToken}</span>`,
       iconSize: [0, 0],
     });
-
     if (cell.labelMarker) map.removeLayer(cell.labelMarker);
-    cell.labelMarker = leaflet
-      .marker(cellToCenter(cellID), { icon })
-      .addTo(map);
-
+    cell.labelMarker = leaflet.marker(cellToCenter(cellID), {
+      icon,
+    }).addTo(map);
     heldToken = null;
     updateStatusUI();
     return;
@@ -429,9 +428,7 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     iconSize: [0, 0],
   });
 
-  cell.labelMarker = leaflet
-    .marker(cellToCenter(cellID), { icon })
-    .addTo(map);
+  cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
 
   heldToken = null;
   updateStatusUI();

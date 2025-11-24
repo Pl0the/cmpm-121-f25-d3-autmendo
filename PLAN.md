@@ -59,7 +59,7 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 -[x] add movement inferace so that the game works no matter how they move
 -[x] Create new buttons for movement using the interface
 -[x] implement Geolocation API based movement using the interface
--[ ] apply the facade pattern to the interface
+-[x] apply the facade pattern to the interface
 -[ ] add a toggle to switch between the two movement types
 -[ ] implement localstorage API for the game state
 -[ ] add ability to load last game state adn resume gameplay

@@ -221,6 +221,46 @@ function setTokenValue(cell: GridCellID, value: number) {
 
 const visibleCells = new Map<string, TokenCell>();
 
+// save/load state
+
+interface GameState {
+  playerGrid: GridCellID;
+  heldToken: number | null;
+  tokens: Record<string, number>;
+  usingGeo: boolean;
+}
+
+function saveGameState(usingGeo: boolean) {
+  const tokens: Record<string, number> = {};
+  for (const [key, m] of mementoMap.entries()) {
+    tokens[key] = m.token;
+  }
+
+  const state: GameState = {
+    playerGrid: { i: playerGrid.i, j: playerGrid.j },
+    heldToken,
+    tokens,
+    usingGeo,
+  };
+
+  try {
+    localStorage.setItem("tokenCrafterState", JSON.stringify(state));
+  } catch (e) {
+    console.warn("Failed to save game state:", e);
+  }
+}
+
+function loadGameState(): GameState | null {
+  const raw = localStorage.getItem("tokenCrafterState");
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as GameState;
+  } catch (e) {
+    console.warn("Failed to parse saved game state:", e);
+    return null;
+  }
+}
+
 // ui setup
 
 const controlPanelDiv = document.createElement("div");
@@ -238,21 +278,11 @@ movementDiv.innerHTML = `
 `;
 controlPanelDiv.append(movementDiv);
 
-// movement toggle button (step 5)
+// movement toggle button
 
 const movementToggleButton = document.createElement("button");
 movementToggleButton.id = "movementToggle";
 controlPanelDiv.append(movementToggleButton);
-
-// player movement
-
-function movePlayer(di: number, dj: number) {
-  playerGrid.i += di;
-  playerGrid.j += dj;
-  updatePlayerMarker();
-  updateStatusUI();
-  renderVisibleCells();
-}
 
 // map ui
 
@@ -290,6 +320,26 @@ const playerMarker = leaflet.marker(CLASSROOM_LATLNG, {
 playerMarker.bindTooltip("You are here!");
 playerMarker.addTo(map);
 
+// load saved state if present
+
+let usingGeo = USE_GEO_PARAM;
+
+const savedState = loadGameState();
+if (savedState) {
+  playerGrid.i = savedState.playerGrid.i;
+  playerGrid.j = savedState.playerGrid.j;
+  heldToken = savedState.heldToken;
+
+  usingGeo = savedState.usingGeo ?? USE_GEO_PARAM;
+
+  mementoMap.clear();
+  for (const [key, token] of Object.entries(savedState.tokens)) {
+    const [iStr, jStr] = key.split(",");
+    const cell: GridCellID = { i: Number(iStr), j: Number(jStr) };
+    createMemento(cell, token);
+  }
+}
+
 function updatePlayerMarker() {
   playerMarker.setLatLng(
     leaflet.latLng(playerGrid.i * TILE_DEGREES, playerGrid.j * TILE_DEGREES),
@@ -311,10 +361,21 @@ function updateStatusUI() {
     `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
-// movement facade + toggle wiring (step 5)
+updateStatusUI();
+
+// player movement
+
+function movePlayer(di: number, dj: number) {
+  playerGrid.i += di;
+  playerGrid.j += dj;
+  updatePlayerMarker();
+  updateStatusUI();
+  renderVisibleCells();
+}
+
+// movement facade + toggle wiring
 
 const facade = new MovementFacade((di, dj) => movePlayer(di, dj));
-let usingGeo = USE_GEO_PARAM;
 
 function setMovementMode(useGeo: boolean) {
   usingGeo = useGeo;
@@ -507,3 +568,7 @@ function spawnCell(cellID: GridCellID): TokenCell {
 
 renderVisibleCells();
 map.on("moveend", renderVisibleCells);
+
+globalThis.addEventListener("beforeunload", () => {
+  saveGameState(usingGeo);
+});

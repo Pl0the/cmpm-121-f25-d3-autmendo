@@ -51,3 +51,17 @@ Key gameplay challenge: Can players collect and craft tokens from nearby locatio
 -[x] apply flyweight pattern to cells
 -[x] apply momento pattern for the cells that we crafted in
 -[x] final polish and cleanup with D3.c
+
+## D3.d Gameplay Across Real-world Space and Time
+
+### D3.d Steps
+
+-[x] add movement inferace so that the game works no matter how they move
+-[ ] Create new buttons for movement using the interface
+-[ ] implement Geolocation API based movement using the interface
+-[ ] apply the facade pattern to the interface
+-[ ] add a toggle to switch between the two movement types
+-[ ] implement localstorage API for the game state
+-[ ] add ability to load last game state adn resume gameplay
+-[ ] implement new game button to start a new game
+-[ ] final polish and cleanup with D3.d

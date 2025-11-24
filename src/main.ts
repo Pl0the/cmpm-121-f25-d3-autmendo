@@ -9,6 +9,13 @@ import "./_leafletWorkaround.ts";
 
 import luck from "./_luck.ts";
 
+// movement interface
+
+interface MovementController {
+  start(onMove: (di: number, dj: number) => void): void;
+  stop(): void;
+}
+
 // Game constants
 
 const CLASSROOM_LATLNG = leaflet.latLng(
@@ -139,22 +146,22 @@ function movePlayer(di: number, dj: number) {
   renderVisibleCells();
 }
 
-document.getElementById("moveN")!.addEventListener(
-  "click",
-  () => movePlayer(-1, 0),
-);
-document.getElementById("moveS")!.addEventListener(
-  "click",
-  () => movePlayer(1, 0),
-);
-document.getElementById("moveW")!.addEventListener(
-  "click",
-  () => movePlayer(0, -1),
-);
-document.getElementById("moveE")!.addEventListener(
-  "click",
-  () => movePlayer(0, 1),
-);
+const movementController: MovementController = {
+  start(onMove) {
+    document.getElementById("moveN")!.onclick = () => onMove(-1, 0);
+    document.getElementById("moveS")!.onclick = () => onMove(1, 0);
+    document.getElementById("moveW")!.onclick = () => onMove(0, -1);
+    document.getElementById("moveE")!.onclick = () => onMove(0, 1);
+  },
+  stop() {
+    document.getElementById("moveN")!.onclick = null;
+    document.getElementById("moveS")!.onclick = null;
+    document.getElementById("moveW")!.onclick = null;
+    document.getElementById("moveE")!.onclick = null;
+  },
+};
+
+movementController.start((di, dj) => movePlayer(di, dj));
 
 const mapDiv = document.createElement("div");
 mapDiv.id = "map";

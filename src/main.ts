@@ -20,17 +20,21 @@ interface MovementController {
 
 class ButtonMovementController implements MovementController {
   start(onMove: (di: number, dj: number) => void): void {
-    document.getElementById("moveN")!.onclick = () => onMove(-1, 0);
-    document.getElementById("moveS")!.onclick = () => onMove(1, 0);
-    document.getElementById("moveW")!.onclick = () => onMove(0, -1);
-    document.getElementById("moveE")!.onclick = () => onMove(0, 1);
+    (document.getElementById("moveN") as HTMLButtonElement).onclick = () =>
+      onMove(-1, 0);
+    (document.getElementById("moveS") as HTMLButtonElement).onclick = () =>
+      onMove(1, 0);
+    (document.getElementById("moveW") as HTMLButtonElement).onclick = () =>
+      onMove(0, -1);
+    (document.getElementById("moveE") as HTMLButtonElement).onclick = () =>
+      onMove(0, 1);
   }
 
   stop(): void {
-    document.getElementById("moveN")!.onclick = null;
-    document.getElementById("moveS")!.onclick = null;
-    document.getElementById("moveW")!.onclick = null;
-    document.getElementById("moveE")!.onclick = null;
+    (document.getElementById("moveN") as HTMLButtonElement).onclick = null;
+    (document.getElementById("moveS") as HTMLButtonElement).onclick = null;
+    (document.getElementById("moveW") as HTMLButtonElement).onclick = null;
+    (document.getElementById("moveE") as HTMLButtonElement).onclick = null;
   }
 }
 
@@ -42,7 +46,10 @@ class GeolocationMovementController implements MovementController {
   private lastLng: number | null = null;
 
   start(onMove: (di: number, dj: number) => void): void {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      console.warn("Geolocation not supported; using no-op controller.");
+      return;
+    }
 
     this.watchId = navigator.geolocation.watchPosition(
       (pos) => {
@@ -122,7 +129,7 @@ const TILE_DEGREES = 0.0001;
 const INTERACTION_RADIUS = 3;
 
 const params = new URLSearchParams(globalThis.location.search);
-const USE_GEO = params.get("movement") === "geo";
+const USE_GEO_PARAM = params.get("movement") === "geo";
 
 let heldToken: number | null = null;
 
@@ -231,6 +238,12 @@ movementDiv.innerHTML = `
 `;
 controlPanelDiv.append(movementDiv);
 
+// movement toggle button (step 5)
+
+const movementToggleButton = document.createElement("button");
+movementToggleButton.id = "movementToggle";
+controlPanelDiv.append(movementToggleButton);
+
 // player movement
 
 function movePlayer(di: number, dj: number) {
@@ -240,13 +253,6 @@ function movePlayer(di: number, dj: number) {
   updateStatusUI();
   renderVisibleCells();
 }
-
-// facade selects controller
-
-const facade = new MovementFacade((di, dj) => movePlayer(di, dj));
-
-if (USE_GEO) facade.useGeo();
-else facade.useButtons();
 
 // map ui
 
@@ -305,6 +311,43 @@ function updateStatusUI() {
     `Held token: ${heldText} | Position: (${playerGrid.i}, ${playerGrid.j})`;
 }
 
+// movement facade + toggle wiring (step 5)
+
+const facade = new MovementFacade((di, dj) => movePlayer(di, dj));
+let usingGeo = USE_GEO_PARAM;
+
+function setMovementMode(useGeo: boolean) {
+  usingGeo = useGeo;
+
+  if (usingGeo) {
+    facade.useGeo();
+  } else {
+    facade.useButtons();
+  }
+
+  movementToggleButton.textContent = usingGeo
+    ? "Switch to buttons"
+    : "Switch to GPS";
+
+  const n = document.getElementById("moveN") as HTMLButtonElement;
+  const s = document.getElementById("moveS") as HTMLButtonElement;
+  const w = document.getElementById("moveW") as HTMLButtonElement;
+  const e = document.getElementById("moveE") as HTMLButtonElement;
+
+  if (n && s && w && e) {
+    n.disabled = usingGeo;
+    s.disabled = usingGeo;
+    w.disabled = usingGeo;
+    e.disabled = usingGeo;
+  }
+}
+
+movementToggleButton.onclick = () => {
+  setMovementMode(!usingGeo);
+};
+
+setMovementMode(usingGeo);
+
 // token cell
 
 interface TokenCell extends leaflet.Rectangle {
@@ -333,9 +376,9 @@ function updateCellStyle(cell: TokenCell, cellID: GridCellID) {
         html: `<span>${cell.tokenValue}</span>`,
         iconSize: [0, 0],
       });
-      cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(
-        map,
-      );
+      cell.labelMarker = leaflet
+        .marker(cellToCenter(cellID), { icon })
+        .addTo(map);
     }
   }
 }
@@ -406,9 +449,9 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
       iconSize: [0, 0],
     });
     if (cell.labelMarker) map.removeLayer(cell.labelMarker);
-    cell.labelMarker = leaflet.marker(cellToCenter(cellID), {
-      icon,
-    }).addTo(map);
+    cell.labelMarker = leaflet
+      .marker(cellToCenter(cellID), { icon })
+      .addTo(map);
     heldToken = null;
     updateStatusUI();
     return;
@@ -428,7 +471,9 @@ function handleCellClick(cell: TokenCell, cellID: GridCellID) {
     iconSize: [0, 0],
   });
 
-  cell.labelMarker = leaflet.marker(cellToCenter(cellID), { icon }).addTo(map);
+  cell.labelMarker = leaflet
+    .marker(cellToCenter(cellID), { icon })
+    .addTo(map);
 
   heldToken = null;
   updateStatusUI();
